@@ -42,10 +42,6 @@ class Coordinate3D {
         return new Coordinate2D(a1*this.x + b1*this.y, c1*this.x + d1*this.y + f1*this.z);
     }
 }
-function mod(m,n) {
-    //fixes modulo of negative numbers
-    return ((m % n) + n) % n;
-}
 
 var c = $('viewport');
 var ctx = c.getContext('2d');
@@ -86,13 +82,14 @@ function drawGraph() {
 function handleMouse(event) {
     if(event.buttons == 1) {
         if(prevMouse.x) {
-            cameraLocation.add(12*(event.clientX - prevMouse.x) / c.width, -6*(event.clientY - prevMouse.y) / c.height);
-            cameraLocation.x = mod(cameraLocation.x, 2*Math.PI)
+            cameraLocation.add(12*(event.clientX - prevMouse.x) / c.width, 6*(event.clientY - prevMouse.y) / c.height);
+            cameraLocation.x = mod(cameraLocation.x, 2*Math.PI);
+            cameraLocation.y = clamp(cameraLocation.y,-Math.PI/2, Math.PI/2);
         }
         A = Math.cos(cameraLocation.x);
         B = -Math.sin(cameraLocation.x);
-        C = -B * Math.sin(cameraLocation.y);
-        D = A * Math.sin(cameraLocation.y);
+        C = B * Math.sin(cameraLocation.y);
+        D = -A * Math.sin(cameraLocation.y);
         F = Math.cos(cameraLocation.y);
         testPoint1 = test3D1.transform(A,B,C,D,F);
         testPoint2 = test3D2.transform(A,B,C,D,F);
@@ -117,4 +114,11 @@ function resizeViewport() {
 
 function $(id) {
     return document.getElementById(id);
+}
+function mod(m,n) {
+    //fixes modulo of negative numbers
+    return ((m % n) + n) % n;
+}
+function clamp(x, min, max) {
+    return Math.max(Math.min(x,max),min);
 }
