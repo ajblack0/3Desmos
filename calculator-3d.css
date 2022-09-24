@@ -3,10 +3,10 @@ html {
 }
 body {
     margin: 0px;
-    background-color: rgb(26, 37, 61);
+    background-color: rgb(29, 32, 59);
     overflow: hidden;
 }
 #viewport {
     display: block;
-    border: 1px solid white;
+    border: 1px solid whitesmoke;
 }

@@ -59,6 +59,7 @@ var A,B,C,D,F;
 
 init();
 initGraph();
+drawGraph();
 
 function init() {
     window.addEventListener('resize', resizeViewport, false);
@@ -68,8 +69,8 @@ function init() {
 }
 
 function initGraph() {
-    ctx.strokeStyle = 'white';
-    ctx.fillStyle = 'white';
+    ctx.strokeStyle = 'whitesmoke';
+    ctx.fillStyle = 'whitesmoke';
     ctx.font = '10px "Consolas"';
 }
 
