@@ -2,23 +2,38 @@ var c = $('viewport')
 var ctx = c.getContext('2d');
 
 init();
-draw();
+initGraph();
 
 function init() {
     window.addEventListener('resize', resizeViewport, false);
     resizeViewport();
+    document.onmousemove = handleMouse;
+    document.onkeydown = handleKeys;
 }
 
-function draw() {
+function initGraph() {
     ctx.strokeStyle = 'white';
-    ctx.moveTo(c.width/2,c.height/2);
-    ctx.lineTo(c.width/2,c.height/2 - 1);
-    ctx.stroke();
+}
+
+function handleMouse(event) {
+    if(event.buttons == 1) {
+        ctx.lineTo(event.clientX,event.clientY);
+        ctx.stroke();
+    }
+}
+
+function handleKeys(event) {
+    if(event.key == 'C') {
+        ctx.clearRect(0,0,c.width,c.height);
+        ctx.beginPath();
+    }
 }
 
 function resizeViewport() {
-    ctx.canvas.width = window.innerWidth;
-    ctx.canvas.height = window.innerHeight;
+    c.width = window.innerWidth;
+    c.height = window.innerHeight; 
+    var imageData = ctx.createImageData(c.width,c.height);
+    initGraph();
 }
 
 function $(id) {
