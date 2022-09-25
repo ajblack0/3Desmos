@@ -43,15 +43,27 @@ class Coordinate3D {
     }
 }
 
-var c = $('viewport');
-var ctx = c.getContext('2d');
-var cameraLocation = new Coordinate2D(null,null);
+var canvas = $('viewport');
+var ctx = canvas.getContext('2d');
+var camera = new Coordinate2D(0,Math.PI/2);
 var prevMouse = new Coordinate2D(null,null);
 var testPoint1 = new Coordinate2D(null,null);
 var testPoint2 = new Coordinate2D(null,null);
 var test3D1 = new Coordinate3D(1,0,0);
 var test3D2 = new Coordinate3D(0,1,0);
+var resolution = 16;
 var A,B,C,D,F;
+function f(x,y) {
+    return 0.3*Math.sin(10*x)*Math.sin(8*y);
+}
+var fPoints = [];
+for(i = 0; i <= resolution; i++) {
+    fPoints.push([]);
+    for(j = 0; j <= resolution; j++) {
+        fPoints[i].push(new Coordinate3D(-1 + i*2/resolution, -1 + j*2/resolution, f(-1 + i*2/resolution, -1 + j*2/resolution)));
+    }
+}
+var tempPoint;
 
 init();
 initGraph();
@@ -71,26 +83,41 @@ function initGraph() {
 }
 
 function drawGraph() {
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillRect(c.width/2, c.height/2, 1, 1);
-    ctx.fillRect(c.width/2 + 300*testPoint1.x, c.height/2 + 300*testPoint1.y, 1, 1);
-    ctx.fillRect(c.width/2 + 300*testPoint2.x, c.height/2 + 300*testPoint2.y, 1, 1);
-    ctx.fillText(cameraLocation.x, 5, 10);
-    ctx.fillText(cameraLocation.y, 5, 20);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    for(i = 0; i <= resolution; i++) {
+        tempPoint = fPoints[i][0].transform(A,B,C,D,F);
+        ctx.moveTo(canvas.width/2 + 300*tempPoint.x, canvas.height/2 + 300*tempPoint.y);
+        for(j = 0; j <= resolution; j++) {
+            tempPoint = fPoints[i][j].transform(A,B,C,D,F);
+            ctx.lineTo(canvas.width/2 + 300*tempPoint.x, canvas.height/2 + 300*tempPoint.y);
+        }
+    }
+    for(i = 0; i <= resolution; i++) {
+        tempPoint = fPoints[0][i].transform(A,B,C,D,F);
+        ctx.moveTo(canvas.width/2 + 300*tempPoint.x, canvas.height/2 + 300*tempPoint.y);
+        for(j = 0; j <= resolution; j++) {
+            tempPoint = fPoints[j][i].transform(A,B,C,D,F);
+            ctx.lineTo(canvas.width/2 + 300*tempPoint.x, canvas.height/2 + 300*tempPoint.y);
+        }
+    }
+    ctx.stroke();
+    ctx.fillText(camera.x, 5, 10);
+    ctx.fillText(camera.y, 5, 20);
 }
 
 function handleMouse(event) {
     if(event.buttons == 1) {
         if(prevMouse.x) {
-            cameraLocation.add(12*(event.clientX - prevMouse.x) / c.width, 6*(event.clientY - prevMouse.y) / c.height);
-            cameraLocation.x = mod(cameraLocation.x, 2*Math.PI);
-            cameraLocation.y = clamp(cameraLocation.y,-Math.PI/2, Math.PI/2);
+            camera.add(12*(event.clientX - prevMouse.x) / canvas.width, 6*(event.clientY - prevMouse.y) / canvas.height);
+            camera.x = mod(camera.x, 2*Math.PI);
+            camera.y = clamp(camera.y,0, Math.PI);
         }
-        A = Math.cos(cameraLocation.x);
-        B = -Math.sin(cameraLocation.x);
-        C = B * Math.sin(cameraLocation.y);
-        D = -A * Math.sin(cameraLocation.y);
-        F = Math.cos(cameraLocation.y);
+        A = Math.cos(camera.x);
+        B = -Math.sin(camera.x);
+        C = -B * Math.cos(camera.y);
+        D = A * Math.cos(camera.y);
+        F = Math.sin(camera.y);
         testPoint1 = test3D1.transform(A,B,C,D,F);
         testPoint2 = test3D2.transform(A,B,C,D,F);
 
@@ -101,15 +128,16 @@ function handleMouse(event) {
 
 function handleKeys(event) {
     if(event.key == 'C') {
-        ctx.clearRect(0,0,c.width,c.height);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
         ctx.beginPath();
     }
 }
 
 function resizeViewport() {
-    c.width = window.innerWidth;
-    c.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     initGraph();
+    drawGraph();
 }
 
 function $(id) {
