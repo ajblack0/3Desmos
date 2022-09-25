@@ -51,7 +51,7 @@ var testPoint1 = new Coordinate2D(null,null);
 var testPoint2 = new Coordinate2D(null,null);
 var test3D1 = new Coordinate3D(1,0,0);
 var test3D2 = new Coordinate3D(0,1,0);
-var resolution = 16;
+var resolution = 80;
 var A,B,C,D,F;
 function f(x,y) {
     return 0.3*Math.sin(10*x)*Math.sin(8*y);
