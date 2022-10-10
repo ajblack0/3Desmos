@@ -1,13 +1,18 @@
 html {
     margin: 0px;
+    height: 100%;
 }
 body {
     margin: 0px;
+    height: 100%;
     background-color: rgb(29, 32, 59);
     overflow: hidden;
 }
 #viewport {
+    margin: auto;
     display: block;
+    width: 640px;
+    height: 640px;
     border: 1px solid whitesmoke;
 }
 .grabbable {
