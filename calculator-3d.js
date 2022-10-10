@@ -36,7 +36,7 @@ function main() {
 
     void main() {
         gl_Position = u_matrix * a_position;
-        v_color = a_color;
+        v_color = vec4(vec3(a_color.x,a_color.y,a_color.z) * dot(vec3(-0.3*cos(11.0*a_position.x)*sin(8.0*a_position.y), -0.3*sin(11.0*a_position.x)*cos(8.0*a_position.y), 1) / sqrt(pow(0.3*cos(11.0*a_position.x)*sin(8.0*a_position.y),2.0) + pow(0.3*sin(11.0*a_position.x)*cos(8.0*a_position.y),2.0) + 1.0), vec3(1, 0, 1)), 1);
     }
     `;
     var fragmentShaderSource = `
@@ -92,7 +92,7 @@ function main() {
             pushVertex(i, j);
         }
     }
-
+    // points below previously used for testing
     /*var positions = [
         0, 0, 0.5,
         0, 0.5, 0.5,
