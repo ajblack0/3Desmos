@@ -1,4 +1,4 @@
-var canvas = document.getElementById('viewport');
+const canvas = document.getElementById('viewport');
 var camera = {
     theta: 0,
     phi: Math.PI/2
@@ -8,6 +8,7 @@ var prevMouse = {
     y: null
 };
 var mouseDown = false;
+const polyCount = 200;
 
 main();
 
@@ -61,8 +62,38 @@ function main() {
             matrix: gl.getUniformLocation(program, 'u_matrix')
         }
     };
+    
+    var delta = 2 / polyCount;
+    function f(x, y) {
+        return 0.3*Math.sin(11*x)*Math.sin(8*y);
+    }
+    function pushVertex(x, y) {
+        positions.push(
+            x, y, f(x, y),
+            x + delta, y, f(x + delta, y),
+            x + delta, y + delta, f(x + delta, y + delta),
+            x, y, f(x, y),
+            x, y + delta, f(x, y + delta),
+            x + delta, y + delta, f(x + delta, y + delta)
+        );
+        colors.push(
+            0, (x+1)/2, (y+1)/2, 1,
+            0, (x+delta+1)/2, (y+1)/2, 1,
+            0, (x+delta+1)/2, (y+delta+1)/2, 1,
+            0, (x+1)/2, (y+1)/2, 1,
+            0, (x+1)/2, (y+delta+1)/2, 1,
+            0, (x+delta+1)/2, (y+delta+1)/2, 1
+        );
+    }
+    var positions = [];
+    var colors = [];
+    for(i = -1; i < 1; i += delta) {
+        for(j = -1; j < 1; j += delta) {
+            pushVertex(i, j);
+        }
+    }
 
-    var positions = [
+    /*var positions = [
         0, 0, 0.5,
         0, 0.5, 0.5,
         0.5, 0, 0.5 ,
@@ -77,7 +108,13 @@ function main() {
         0.3, 0, 0.3,
         0, 0, 0,
         0, 0.3, 0.3,
-        -0.3, 0, 0.3
+        -0.3, 0, 0.3,
+        0, 0, 0,
+        0, -0.3, 0.3,
+        -0.3, 0, 0.3,
+        0.5, 0, 0,
+        -0.5, 0, 0,
+        0, 0, 0.5
     ];
     var colors = [
         0.1, 0.5, 0.7, 1,
@@ -94,8 +131,14 @@ function main() {
         0.5, 0, 0.5, 1,
         0.5, 0.5, 0, 1,
         0.5, 0.5, 0, 1,
-        0.5, 0.5, 0, 1
-    ];
+        0.5, 0.5, 0, 1,
+        1, 0, 0, 1,
+        1, 0, 0, 1,
+        1, 0, 0, 1,
+        0, 0, 1, 1,
+        0, 0, 1, 1,
+        0, 0, 1, 1
+    ];*/
     var matrix = [
         1, 0, 0, 0,
         0, 1, 0, 0,
@@ -112,25 +155,32 @@ function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
+    // matches WebGL viewport size to canvas size
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+    // enables render order by depth (clip space z)
     gl.enable(gl.DEPTH_TEST);
         
     function renderLoop() {
+        // trig values to be used in the rotation matrix
         sinTheta = Math.sin(camera.theta);
         cosTheta = Math.cos(camera.theta);
         sinPhi = Math.sin(camera.phi);
         cosPhi = Math.cos(camera.phi);
 
+        // 3-dimensional rotation matrix
         matrix = [
-            cosTheta, sinTheta*sinPhi, 0, 0,
-            -sinTheta, cosTheta*sinPhi, cosPhi, 0,
-            0, cosPhi, -sinPhi, 0,
-            0, 0, 0, 1
+            cosTheta, sinTheta*sinPhi, sinTheta*cosPhi, sinTheta*cosPhi/2,
+            -sinTheta, cosTheta*sinPhi, cosTheta*cosPhi, cosTheta*cosPhi/2,
+            0, cosPhi, -sinPhi, -sinPhi/2,
+            0, 0, 0, 2
         ];
 
         drawGraph(gl, programInfo, buffers, matrix);
+        // repeatedly renders the scene
         requestAnimationFrame(renderLoop);
     }
+    // render for the first time
     requestAnimationFrame(renderLoop);
 }
 
@@ -160,7 +210,7 @@ function drawGraph(gl, programInfo, buffers, matrix) {
 
     gl.uniformMatrix4fv(programInfo.uniformLocations.matrix, false, matrix);
 
-    var count = 15;
+    var count = Math.pow(polyCount, 2) * 6;
     gl.drawArrays(gl.TRIANGLES, offset, count);
 }
 
@@ -194,12 +244,11 @@ function createProgram(gl, vertexShader, fragmentShader) {
 function handleMouse(event) {
     if(mouseDown) {
         if(prevMouse.x) {
-            camera.theta += 3*(event.clientX - prevMouse.x) / canvas.width;
-            camera.phi += 3*(event.clientY - prevMouse.y) / canvas.height;
+            camera.theta += 4*(event.clientX - prevMouse.x) / canvas.width;
+            camera.phi += 4*(event.clientY - prevMouse.y) / canvas.height;
             camera.theta %= 2*Math.PI;
             camera.phi = clamp(camera.phi, -Math.PI/2, Math.PI/2)
         }
-        console.log(camera.theta.toFixed(2), camera.phi.toFixed(2));
     }
     prevMouse.x = event.clientX;
     prevMouse.y = event.clientY;
