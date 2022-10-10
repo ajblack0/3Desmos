@@ -5,5 +5,21 @@ body {
     color: whitesmoke;
 }
 a {
-    color: lightskyblue;
+    text-decoration: none;
+}
+.button {
+    background-color: rgb(48, 53, 97);
+    color: whitesmoke;
+    display: flex;
+    margin: auto;
+    justify-content: center;
+    width: 200px;
+    padding: 20px 20px 20px 20px;
+}
+.button:hover {
+    background-color: rgb(57, 63, 117);
+}
+.button:active {
+    background-color: rgb(38, 43, 87);
+    color: gray;
 }
