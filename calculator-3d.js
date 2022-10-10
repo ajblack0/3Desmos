@@ -1,7 +1,7 @@
 var canvas = document.getElementById('viewport');
 var camera = {
     theta: 0,
-    phi: 0
+    phi: Math.PI/2
 };
 var prevMouse = {
     x: null,
@@ -22,12 +22,8 @@ function main() {
     canvas.height = 640;
 
     document.onmousemove = handleMouse;
-    document.onmousedown = function(event) {
-        if(event.target == canvas) {
-            mouseDown = true;
-            canvas.style.cursor = 'grabbing';
-    }};
-    document.onmouseup = function() {mouseDown = false; canvas.style.cursor = 'grab'};
+    document.onmousedown = function(event) {mouseDown = (event.target == canvas);};
+    document.onmouseup = function() {mouseDown = false;};
     document.onkeydown = handleKeys;
 
 
@@ -67,12 +63,21 @@ function main() {
     };
 
     var positions = [
-        0, 0,
-        0, 0.5,
-        0.5, 0,
-        -0.5, -0.5,
-        0, -0.5,
-        -0.5, 0
+        0, 0, 0.5,
+        0, 0.5, 0.5,
+        0.5, 0, 0.5 ,
+        0, -0.5, 0,
+        -0.5, -0.5, 0,
+        -0.5, 0, 0,
+        0, 0, 0,
+        0, 0.3, 0.3,
+        0.3, 0, 0.3,
+        0, 0, 0,
+        0, -0.3, 0.3,
+        0.3, 0, 0.3,
+        0, 0, 0,
+        0, 0.3, 0.3,
+        -0.3, 0, 0.3
     ];
     var colors = [
         0.1, 0.5, 0.7, 1,
@@ -80,7 +85,16 @@ function main() {
         1, 1, 1, 1,
         1, 0, 0, 1,
         0, 1, 0, 1,
-        0, 0, 1, 0
+        0, 0, 1, 1,
+        0, 0.5, 0.5, 1,
+        0, 0.5, 0.5, 1,
+        0, 0.5, 0.5, 1,
+        0.5, 0, 0.5, 1,
+        0.5, 0, 0.5, 1,
+        0.5, 0, 0.5, 1,
+        0.5, 0.5, 0, 1,
+        0.5, 0.5, 0, 1,
+        0.5, 0.5, 0, 1
     ];
     var matrix = [
         1, 0, 0, 0,
@@ -99,15 +113,21 @@ function main() {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
+    gl.enable(gl.DEPTH_TEST);
+        
     function renderLoop() {
+        sinTheta = Math.sin(camera.theta);
+        cosTheta = Math.cos(camera.theta);
+        sinPhi = Math.sin(camera.phi);
+        cosPhi = Math.cos(camera.phi);
+
         matrix = [
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            camera.theta / 1000, camera.phi / 1000, 0, 1
+            cosTheta, sinTheta*sinPhi, 0, 0,
+            -sinTheta, cosTheta*sinPhi, cosPhi, 0,
+            0, cosPhi, -sinPhi, 0,
+            0, 0, 0, 1
         ];
-        //console.log(camera.theta + ' ' + camera.phi);
+
         drawGraph(gl, programInfo, buffers, matrix);
         requestAnimationFrame(renderLoop);
     }
@@ -116,13 +136,13 @@ function main() {
 
 function drawGraph(gl, programInfo, buffers, matrix) {
     gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.useProgram(programInfo.program);
 
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-    var size = 2;
+    var size = 3;
     var type = gl.FLOAT;
     var normalize = false;
     var stride = 0;
@@ -140,7 +160,7 @@ function drawGraph(gl, programInfo, buffers, matrix) {
 
     gl.uniformMatrix4fv(programInfo.uniformLocations.matrix, false, matrix);
 
-    var count = 6;
+    var count = 15;
     gl.drawArrays(gl.TRIANGLES, offset, count);
 }
 
@@ -174,24 +194,21 @@ function createProgram(gl, vertexShader, fragmentShader) {
 function handleMouse(event) {
     if(mouseDown) {
         if(prevMouse.x) {
-            camera.theta += event.clientX - prevMouse.x;
-            camera.phi -= event.clientY - prevMouse.y;
+            camera.theta += 3*(event.clientX - prevMouse.x) / canvas.width;
+            camera.phi += 3*(event.clientY - prevMouse.y) / canvas.height;
+            camera.theta %= 2*Math.PI;
+            camera.phi = clamp(camera.phi, -Math.PI/2, Math.PI/2)
         }
+        console.log(camera.theta.toFixed(2), camera.phi.toFixed(2));
     }
     prevMouse.x = event.clientX;
     prevMouse.y = event.clientY;
 }
 
 function handleKeys(event) {
-    if(event.key == 'C') {
-        //clear scrn
-    }
+    // to be used maybe sometime
 }
 
-function mod(m,n) {
-    //fixes modulo of negative numbers
-    return ((m % n) + n) % n;
-}
 function clamp(x, min, max) {
     return Math.max(Math.min(x,max),min);
 }
