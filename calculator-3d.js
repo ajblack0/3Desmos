@@ -1,148 +1,193 @@
-class Coordinate2D {
-    constructor(x,y) {
-        this.x = x;
-        this.y = y;
-    }
-    set(x,y) {
-        this.x = x;
-        this.y = y;
-    }
-    add(x,y) {
-        this.x += x;
-        this.y += y;
-    }
-}
-class Coordinate3D {
-    constructor(x,y,z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-    set(x,y,z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-    add(x,y,z) {
-        this.x += x;
-        this.y += y;
-        this.z += z;
-    }
-    scalar(c) {
-        this.x *= c;
-        this.y *= c;
-        this.z *= c;
-    }
-    dot(v) {
-        this.x *= v.x;
-        this.y *= v.y;
-        this.z *= v.z;
-    }
-    transform(a1,b1,c1,d1,f1) {
-        return new Coordinate2D(a1*this.x + b1*this.y, c1*this.x + d1*this.y + f1*this.z);
-    }
-}
+var canvas = document.getElementById('viewport');
+var camera = {
+    theta: 0,
+    phi: 0
+};
+var prevMouse = {
+    x: null,
+    y: null
+};
+var mouseDown = false;
 
-var canvas = $('viewport');
-var ctx = canvas.getContext('2d');
-var camera = new Coordinate2D(0,Math.PI/2);
-var prevMouse = new Coordinate2D(null,null);
-var testPoint1 = new Coordinate2D(null,null);
-var testPoint2 = new Coordinate2D(null,null);
-var test3D1 = new Coordinate3D(1,0,0);
-var test3D2 = new Coordinate3D(0,1,0);
-var resolution = 80;
-var A,B,C,D,F;
-function f(x,y) {
-    return 0.3*Math.sin(10*x)*Math.sin(8*y);
-}
-var fPoints = [];
-for(i = 0; i <= resolution; i++) {
-    fPoints.push([]);
-    for(j = 0; j <= resolution; j++) {
-        fPoints[i].push(new Coordinate3D(-1 + i*2/resolution, -1 + j*2/resolution, f(-1 + i*2/resolution, -1 + j*2/resolution)));
+main();
+
+function main() {
+    var gl = canvas.getContext('webgl');
+    if(!gl) {
+        alert('WebGL unsupported!');
+        return;
     }
-}
-var tempPoint;
+    
+    canvas.width = 640;
+    canvas.height = 640;
 
-init();
-initGraph();
-drawGraph();
-
-function init() {
-    window.addEventListener('resize', resizeViewport, false);
-    resizeViewport();
     document.onmousemove = handleMouse;
+    document.onmousedown = function(event) {
+        if(event.target == canvas) {
+            mouseDown = true;
+            canvas.style.cursor = 'grabbing';
+    }};
+    document.onmouseup = function() {mouseDown = false; canvas.style.cursor = 'grab'};
     document.onkeydown = handleKeys;
+
+
+    var vertexShaderSource = `
+    attribute vec4 a_position;
+    attribute vec4 a_color;
+    uniform mat4 u_matrix;
+    varying vec4 v_color;
+
+    void main() {
+        gl_Position = u_matrix * a_position;
+        v_color = a_color;
+    }
+    `;
+    var fragmentShaderSource = `
+    precision mediump float;
+    varying vec4 v_color;
+
+    void main() {
+        gl_FragColor = v_color;
+    }
+    `;
+
+    var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    var program = createProgram(gl, vertexShader, fragmentShader);
+    
+    var programInfo = {
+        program: program,
+        attribLocations: {
+            vertexPosition: gl.getAttribLocation(program, 'a_position'),
+            vertexColor: gl.getAttribLocation(program, 'a_color')
+        },
+        uniformLocations: {
+            matrix: gl.getUniformLocation(program, 'u_matrix')
+        }
+    };
+
+    var positions = [
+        0, 0,
+        0, 0.5,
+        0.5, 0,
+        -0.5, -0.5,
+        0, -0.5,
+        -0.5, 0
+    ];
+    var colors = [
+        0.1, 0.5, 0.7, 1,
+        0.05, 0.25, 0.35, 1,
+        1, 1, 1, 1,
+        1, 0, 0, 1,
+        0, 1, 0, 1,
+        0, 0, 1, 0
+    ];
+    var matrix = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ]
+
+    var buffers = {
+        position: gl.createBuffer(),
+        color: gl.createBuffer()
+    };
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+    function renderLoop() {
+        matrix = [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            camera.theta / 1000, camera.phi / 1000, 0, 1
+        ];
+        //console.log(camera.theta + ' ' + camera.phi);
+        drawGraph(gl, programInfo, buffers, matrix);
+        requestAnimationFrame(renderLoop);
+    }
+    requestAnimationFrame(renderLoop);
 }
 
-function initGraph() {
-    ctx.strokeStyle = 'whitesmoke';
-    ctx.fillStyle = 'whitesmoke';
-    ctx.font = '10px "Consolas"';
+function drawGraph(gl, programInfo, buffers, matrix) {
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.useProgram(programInfo.program);
+
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+    var size = 2;
+    var type = gl.FLOAT;
+    var normalize = false;
+    var stride = 0;
+    var offset = 0;
+    gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, size, type, normalize, stride, offset);
+
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+    var size = 4;
+    var type = gl.FLOAT;
+    var normalize = false;
+    var stride = 0;
+    var offset = 0;
+    gl.vertexAttribPointer(programInfo.attribLocations.vertexColor, size, type, normalize, stride, offset);
+
+    gl.uniformMatrix4fv(programInfo.uniformLocations.matrix, false, matrix);
+
+    var count = 6;
+    gl.drawArrays(gl.TRIANGLES, offset, count);
 }
 
-function drawGraph() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-    for(i = 0; i <= resolution; i++) {
-        tempPoint = fPoints[i][0].transform(A,B,C,D,F);
-        ctx.moveTo(canvas.width/2 + 300*tempPoint.x, canvas.height/2 + 300*tempPoint.y);
-        for(j = 0; j <= resolution; j++) {
-            tempPoint = fPoints[i][j].transform(A,B,C,D,F);
-            ctx.lineTo(canvas.width/2 + 300*tempPoint.x, canvas.height/2 + 300*tempPoint.y);
-        }
+function loadShader(gl, type, source) {
+    var shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+
+    if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.log(gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
     }
-    for(i = 0; i <= resolution; i++) {
-        tempPoint = fPoints[0][i].transform(A,B,C,D,F);
-        ctx.moveTo(canvas.width/2 + 300*tempPoint.x, canvas.height/2 + 300*tempPoint.y);
-        for(j = 0; j <= resolution; j++) {
-            tempPoint = fPoints[j][i].transform(A,B,C,D,F);
-            ctx.lineTo(canvas.width/2 + 300*tempPoint.x, canvas.height/2 + 300*tempPoint.y);
-        }
+    return shader;
+}
+
+function createProgram(gl, vertexShader, fragmentShader) {
+    var program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    if(!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.log(gl.getProgramInfoLog(program));
+        gl.deleteProgram(program);
+        return null;
     }
-    ctx.stroke();
-    ctx.fillText(camera.x, 5, 10);
-    ctx.fillText(camera.y, 5, 20);
+    return program;
 }
 
 function handleMouse(event) {
-    if(event.buttons == 1) {
+    if(mouseDown) {
         if(prevMouse.x) {
-            camera.add(12*(event.clientX - prevMouse.x) / canvas.width, 6*(event.clientY - prevMouse.y) / canvas.height);
-            camera.x = mod(camera.x, 2*Math.PI);
-            camera.y = clamp(camera.y,0, Math.PI);
+            camera.theta += event.clientX - prevMouse.x;
+            camera.phi -= event.clientY - prevMouse.y;
         }
-        A = Math.cos(camera.x);
-        B = -Math.sin(camera.x);
-        C = -B * Math.cos(camera.y);
-        D = A * Math.cos(camera.y);
-        F = Math.sin(camera.y);
-        testPoint1 = test3D1.transform(A,B,C,D,F);
-        testPoint2 = test3D2.transform(A,B,C,D,F);
-
-        drawGraph();
     }
-    prevMouse.set(event.clientX, event.clientY);
+    prevMouse.x = event.clientX;
+    prevMouse.y = event.clientY;
 }
 
 function handleKeys(event) {
     if(event.key == 'C') {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.beginPath();
+        //clear scrn
     }
 }
 
-function resizeViewport() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    initGraph();
-    drawGraph();
-}
-
-function $(id) {
-    return document.getElementById(id);
-}
 function mod(m,n) {
     //fixes modulo of negative numbers
     return ((m % n) + n) % n;
