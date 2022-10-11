@@ -14,6 +14,7 @@ body {
     width: 720px;
     height: 720px;
     border: 1px solid whitesmoke;
+    touch-action: none;
 }
 .grabbable {
     cursor: move; /* fallback if grab cursor is unsupported */

@@ -24,7 +24,7 @@ function main() {
 
     document.onpointermove = handleMouse;
     document.onpointerdown = function(event) {mouseDown = (event.target == canvas);};
-    document.onpointerup = function() {mouseDown = false;};
+    document.onpointerup = function() {mouseDown = false; prevMouse.x = null;};
     document.onkeydown = handleKeys;
 
 
@@ -258,9 +258,9 @@ function handleMouse(event) {
             camera.theta %= 2*Math.PI;
             camera.phi = clamp(camera.phi, -Math.PI/2, Math.PI/2)
         }
+        prevMouse.x = event.clientX;
+        prevMouse.y = event.clientY;
     }
-    prevMouse.x = event.clientX;
-    prevMouse.y = event.clientY;
 }
 
 function handleKeys(event) {
