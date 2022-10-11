@@ -34,23 +34,30 @@ function main() {
     attribute vec4 a_color;
     uniform mat4 u_matrix;
     varying vec4 v_color;
+    varying vec3 v_normal;
 
-    vec3 light = vec3(1, 0, 1);
+    float f(in vec2 p) {
+        return 0.3*sin(11.0*p.x)*sin(8.0*p.y);
+    }
     vec3 normal(in vec4 position) {
-        return vec3(-0.3*cos(11.0*position.x)*sin(8.0*position.y), -0.3*sin(11.0*position.x)*cos(8.0*position.y), 1) / sqrt(pow(0.3*cos(11.0*position.x)*sin(8.0*position.y),2.0) + pow(0.3*sin(11.0*position.x)*cos(8.0*position.y),2.0) + 1.0);
+        return vec3(-0.3*11.0*cos(11.0*position.x)*sin(8.0*position.y), -0.3*8.0*sin(11.0*position.x)*cos(8.0*position.y), 1);
     }
 
     void main() {
-        gl_Position = u_matrix * a_position;
-        v_color = a_color * dot(normal(a_position), light);
+        gl_Position = u_matrix * vec4(a_position.xy, f(a_position.xy), a_position.w);
+        v_color = a_color;
+        v_normal = mat3(u_matrix) * normalize(normal(a_position));
     }
     `;
     var fragmentShaderSource = `
     precision mediump float;
     varying vec4 v_color;
+    varying vec3 v_normal;
+
+    vec3 light = vec3(0.3, 0.4, -1.0/sqrt(2.0));
 
     void main() {
-        gl_FragColor = v_color;
+        gl_FragColor = vec4(v_color.rgb * (0.4 + dot(v_normal, light)), v_color.a);
     }
     `;
 
