@@ -33,6 +33,7 @@ function main() {
     attribute vec4 a_position;
     attribute vec4 a_color;
     uniform mat4 u_matrix;
+    
     varying vec4 v_color;
     varying vec3 v_normal;
 
@@ -54,10 +55,14 @@ function main() {
     varying vec4 v_color;
     varying vec3 v_normal;
 
-    vec3 light = vec3(0.3, 0.4, -1.0/sqrt(2.0));
+    vec3 light = normalize(vec3(0.3, 0.6, -1.0));
 
     void main() {
-        gl_FragColor = vec4(v_color.rgb * (0.4 + dot(v_normal, light)), v_color.a);
+        if(gl_FrontFacing) {
+            gl_FragColor = vec4(v_color.rgb * (0.4 + dot(v_normal, light)), v_color.a);
+        } else {
+            gl_FragColor = vec4(v_color.rgb * (0.4 + dot(-v_normal, light)), v_color.a);
+        }
     }
     `;
 
@@ -86,8 +91,8 @@ function main() {
             x + delta, y, f(x + delta, y),
             x + delta, y + delta, f(x + delta, y + delta),
             x, y, f(x, y),
-            x, y + delta, f(x, y + delta),
-            x + delta, y + delta, f(x + delta, y + delta)
+            x + delta, y + delta, f(x + delta, y + delta),
+            x, y + delta, f(x, y + delta)
         );
         colors.push(
             /*0, (x+1)/2, (y+1)/2, 1,
