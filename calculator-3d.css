@@ -11,8 +11,8 @@ body {
 #viewport {
     margin: auto;
     display: block;
-    width: 720px;
-    height: 720px;
+    width: 100vmin;
+    height: 100vmin;
     border: 1px solid whitesmoke;
     touch-action: none;
 }

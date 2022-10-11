@@ -1,4 +1,5 @@
 const canvas = document.getElementById('viewport');
+const canvasSize = canvas.getBoundingClientRect();
 var camera = {
     theta: 0,
     phi: Math.PI/4
@@ -18,9 +19,9 @@ function main() {
         alert('WebGL unsupported!');
         return;
     }
-    
-    canvas.width = 720;
-    canvas.height = 720;
+
+    canvas.width = canvasSize.width;
+    canvas.height = canvasSize.height;
 
     document.onpointermove = handleMouse;
     document.onpointerdown = function(event) {mouseDown = (event.target == canvas);};
