@@ -1,7 +1,7 @@
 const canvas = document.getElementById('viewport');
 var camera = {
     theta: 0,
-    phi: Math.PI/2
+    phi: Math.PI/4
 };
 var prevMouse = {
     x: null,
@@ -19,12 +19,12 @@ function main() {
         return;
     }
     
-    canvas.width = 640;
-    canvas.height = 640;
+    canvas.width = 720;
+    canvas.height = 720;
 
-    document.onmousemove = handleMouse;
-    document.onmousedown = function(event) {mouseDown = (event.target == canvas);};
-    document.onmouseup = function() {mouseDown = false;};
+    document.onpointermove = handleMouse;
+    document.onpointerdown = function(event) {mouseDown = (event.target == canvas);};
+    document.onpointerup = function() {mouseDown = false;};
     document.onkeydown = handleKeys;
 
 
@@ -34,9 +34,14 @@ function main() {
     uniform mat4 u_matrix;
     varying vec4 v_color;
 
+    vec3 light = vec3(1, 0, 1);
+    vec3 normal(in vec4 position) {
+        return vec3(-0.3*cos(11.0*position.x)*sin(8.0*position.y), -0.3*sin(11.0*position.x)*cos(8.0*position.y), 1) / sqrt(pow(0.3*cos(11.0*position.x)*sin(8.0*position.y),2.0) + pow(0.3*sin(11.0*position.x)*cos(8.0*position.y),2.0) + 1.0);
+    }
+
     void main() {
         gl_Position = u_matrix * a_position;
-        v_color = vec4(vec3(a_color.x,a_color.y,a_color.z) * dot(vec3(-0.3*cos(11.0*a_position.x)*sin(8.0*a_position.y), -0.3*sin(11.0*a_position.x)*cos(8.0*a_position.y), 1) / sqrt(pow(0.3*cos(11.0*a_position.x)*sin(8.0*a_position.y),2.0) + pow(0.3*sin(11.0*a_position.x)*cos(8.0*a_position.y),2.0) + 1.0), vec3(1, 0, 1)), 1);
+        v_color = a_color * dot(normal(a_position), light);
     }
     `;
     var fragmentShaderSource = `
@@ -77,12 +82,18 @@ function main() {
             x + delta, y + delta, f(x + delta, y + delta)
         );
         colors.push(
-            0, (x+1)/2, (y+1)/2, 1,
+            /*0, (x+1)/2, (y+1)/2, 1,
             0, (x+delta+1)/2, (y+1)/2, 1,
             0, (x+delta+1)/2, (y+delta+1)/2, 1,
             0, (x+1)/2, (y+1)/2, 1,
             0, (x+1)/2, (y+delta+1)/2, 1,
-            0, (x+delta+1)/2, (y+delta+1)/2, 1
+            0, (x+delta+1)/2, (y+delta+1)/2, 1*/
+            0, 0.5, 1, 1,
+            0, 0.5, 1, 1,
+            0, 0.5, 1, 1,
+            0, 0.5, 1, 1,
+            0, 0.5, 1, 1,
+            0, 0.5, 1, 1
         );
     }
     var positions = [];
@@ -155,10 +166,8 @@ function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
-    // matches WebGL viewport size to canvas size
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-    // enables render order by depth (clip space z)
     gl.enable(gl.DEPTH_TEST);
         
     function renderLoop() {

@@ -11,8 +11,8 @@ body {
 #viewport {
     margin: auto;
     display: block;
-    width: 640px;
-    height: 640px;
+    width: 720px;
+    height: 720px;
     border: 1px solid whitesmoke;
 }
 .grabbable {
