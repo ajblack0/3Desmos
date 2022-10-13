@@ -58,11 +58,7 @@ function main() {
     vec3 light = normalize(vec3(0.3, 0.6, -1.0));
 
     void main() {
-        if(gl_FrontFacing) {
-            gl_FragColor = vec4(v_color.rgb * (0.4 + dot(v_normal, light)), v_color.a);
-        } else {
-            gl_FragColor = vec4(v_color.rgb * (0.4 + dot(-v_normal, light)), v_color.a);
-        }
+        gl_FragColor = vec4(v_color.rgb * (0.4 + dot((2.0*float(gl_FrontFacing)-1.0)*v_normal, light)), v_color.a);
     }
     `;
 
