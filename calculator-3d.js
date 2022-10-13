@@ -32,22 +32,16 @@ function main() {
     var vertexShaderSource = `
     attribute vec4 a_position;
     attribute vec4 a_color;
+    attribute vec3 a_normal;
     uniform mat4 u_matrix;
     
     varying vec4 v_color;
     varying vec3 v_normal;
 
-    float f(in vec2 p) {
-        return 0.3*sin(11.0*p.x)*sin(8.0*p.y);
-    }
-    vec3 normal(in vec4 position) {
-        return vec3(-0.3*11.0*cos(11.0*position.x)*sin(8.0*position.y), -0.3*8.0*sin(11.0*position.x)*cos(8.0*position.y), 1);
-    }
-
     void main() {
-        gl_Position = u_matrix * vec4(a_position.xy, f(a_position.xy), a_position.w);
+        gl_Position = u_matrix * a_position;
         v_color = a_color;
-        v_normal = mat3(u_matrix) * normalize(normal(a_position));
+        v_normal = mat3(u_matrix) * normalize(a_normal);
     }
     `;
     var fragmentShaderSource = `
@@ -58,7 +52,7 @@ function main() {
     vec3 light = normalize(vec3(0.3, 0.6, -1.0));
 
     void main() {
-        gl_FragColor = vec4(v_color.rgb * (0.4 + dot((2.0*float(gl_FrontFacing)-1.0)*v_normal, light)), v_color.a);
+        gl_FragColor = vec4(v_color.rgb * (0.5+0.5*dot((2.0*float(gl_FrontFacing)-1.0)*v_normal, light)), v_color.a);
     }
     `;
 
@@ -70,7 +64,8 @@ function main() {
         program: program,
         attribLocations: {
             vertexPosition: gl.getAttribLocation(program, 'a_position'),
-            vertexColor: gl.getAttribLocation(program, 'a_color')
+            vertexColor: gl.getAttribLocation(program, 'a_color'),
+            vertexNormal: gl.getAttribLocation(program, 'a_normal')
         },
         uniformLocations: {
             matrix: gl.getUniformLocation(program, 'u_matrix')
@@ -80,6 +75,12 @@ function main() {
     var delta = 2 / polyCount;
     function f(x, y) {
         return 0.3*Math.sin(11*x)*Math.sin(8*y);
+    }
+    function dfdx(x, y) {
+        return (f(x + 0.0000001, y) - f(x, y)) / 0.0000001;
+    }
+    function dfdy(x, y) {
+        return (f(x, y + 0.0000001) - f(x, y)) / 0.0000001;
     }
     function pushVertex(x, y) {
         positions.push(
@@ -97,16 +98,25 @@ function main() {
             0, (x+1)/2, (y+1)/2, 1,
             0, (x+1)/2, (y+delta+1)/2, 1,
             0, (x+delta+1)/2, (y+delta+1)/2, 1*/
-            0, 0.5, 1, 1,
-            0, 0.5, 1, 1,
-            0, 0.5, 1, 1,
-            0, 0.5, 1, 1,
-            0, 0.5, 1, 1,
-            0, 0.5, 1, 1
+            0, 0.7, 1, 1,
+            0, 0.7, 1, 1,
+            0, 0.7, 1, 1,
+            0, 0.7, 1, 1,
+            0, 0.7, 1, 1,
+            0, 0.7, 1, 1
         );
+        normals.push(
+            -dfdx(x, y), -dfdy(x, y), 1,
+            -dfdx(x + delta, y), -dfdy(x + delta, y), 1,
+            -dfdx(x + delta, y + delta), -dfdy(x + delta, y + delta), 1,
+            -dfdx(x, y), -dfdy(x, y), 1,
+            -dfdx(x + delta, y + delta), -dfdy(x + delta, y + delta), 1,
+            -dfdx(x, y + delta), -dfdy(x, y + delta), 1
+        )
     }
     var positions = [];
     var colors = [];
+    var normals = [];
     for(i = -1; i < 1; i += delta) {
         for(j = -1; j < 1; j += delta) {
             pushVertex(i, j);
@@ -168,12 +178,15 @@ function main() {
 
     var buffers = {
         position: gl.createBuffer(),
-        color: gl.createBuffer()
+        color: gl.createBuffer(),
+        normal: gl.createBuffer()
     };
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -225,6 +238,15 @@ function drawGraph(gl, programInfo, buffers, matrix) {
     var stride = 0;
     var offset = 0;
     gl.vertexAttribPointer(programInfo.attribLocations.vertexColor, size, type, normalize, stride, offset);
+
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+    var size = 3;
+    var type = gl.FLOAT;
+    var normalize = false;
+    var stride = 0;
+    var offset = 0;
+    gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, size, type, normalize, stride, offset);
 
     gl.uniformMatrix4fv(programInfo.uniformLocations.matrix, false, matrix);
 
