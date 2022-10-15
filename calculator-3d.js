@@ -14,7 +14,7 @@ const polyCount = 200;
 main();
 
 function main() {
-    var gl = canvas.getContext('webgl');
+    const gl = canvas.getContext('webgl');
     if(!gl) {
         alert('WebGL unsupported!');
         return;
@@ -29,7 +29,7 @@ function main() {
     document.onkeydown = handleKeys;
 
 
-    var vertexShaderSource = `
+    const vertexShaderSource = `
     attribute vec4 a_position;
     attribute vec4 a_color;
     attribute vec3 a_normal;
@@ -44,7 +44,7 @@ function main() {
         v_normal = mat3(u_matrix) * normalize(a_normal);
     }
     `;
-    var fragmentShaderSource = `
+    const fragmentShaderSource = `
     precision mediump float;
     varying vec4 v_color;
     varying vec3 v_normal;
@@ -52,7 +52,7 @@ function main() {
     vec3 light = normalize(vec3(0.3, 0.6, -1.0));
 
     void main() {
-        gl_FragColor = vec4(v_color.rgb * (0.5+0.5*dot((2.0*float(gl_FrontFacing)-1.0)*v_normal, light)), v_color.a);
+        gl_FragColor = vec4(v_color.rgb * (0.4+0.6*dot((2.0*float(gl_FrontFacing)-1.0)*v_normal, light)), v_color.a);
     }
     `;
 
@@ -72,7 +72,6 @@ function main() {
         }
     };
     
-    var delta = 2 / polyCount;
     function f(x, y) {
         return 0.3*Math.sin(11*x)*Math.sin(8*y);
     }
@@ -83,92 +82,36 @@ function main() {
         return (f(x, y + 0.0000001) - f(x, y)) / 0.0000001;
     }
     function pushVertex(x, y) {
-        positions.push(
-            x, y, f(x, y),
-            x + delta, y, f(x + delta, y),
-            x + delta, y + delta, f(x + delta, y + delta),
-            x, y, f(x, y),
-            x + delta, y + delta, f(x + delta, y + delta),
-            x, y + delta, f(x, y + delta)
+        positions.push(x, y, f(x, y));
+        colors.push(0, 0.7, 1, 1);
+        normals.push(-dfdx(x, y), -dfdy(x, y), 1);
+    }
+    function pushIndex(i, j) {
+        var index = i*(polyCount+1) + j;
+        indices.push(
+            index,
+            index + polyCount + 1,
+            index + 1,
+            index + polyCount + 1,
+            index + polyCount + 2,
+            index + 1
         );
-        colors.push(
-            /*0, (x+1)/2, (y+1)/2, 1,
-            0, (x+delta+1)/2, (y+1)/2, 1,
-            0, (x+delta+1)/2, (y+delta+1)/2, 1,
-            0, (x+1)/2, (y+1)/2, 1,
-            0, (x+1)/2, (y+delta+1)/2, 1,
-            0, (x+delta+1)/2, (y+delta+1)/2, 1*/
-            0, 0.7, 1, 1,
-            0, 0.7, 1, 1,
-            0, 0.7, 1, 1,
-            0, 0.7, 1, 1,
-            0, 0.7, 1, 1,
-            0, 0.7, 1, 1
-        );
-        normals.push(
-            -dfdx(x, y), -dfdy(x, y), 1,
-            -dfdx(x + delta, y), -dfdy(x + delta, y), 1,
-            -dfdx(x + delta, y + delta), -dfdy(x + delta, y + delta), 1,
-            -dfdx(x, y), -dfdy(x, y), 1,
-            -dfdx(x + delta, y + delta), -dfdy(x + delta, y + delta), 1,
-            -dfdx(x, y + delta), -dfdy(x, y + delta), 1
-        )
     }
     var positions = [];
     var colors = [];
     var normals = [];
-    for(i = -1; i < 1; i += delta) {
-        for(j = -1; j < 1; j += delta) {
-            pushVertex(i, j);
+    var indices = [];
+
+    const delta = 2 / polyCount;
+    for(i = 0; i <= polyCount; i++) {
+        for(j = 0; j <= polyCount; j++) {
+            pushVertex(i*delta - 1, j*delta - 1);
+            if(j < polyCount) {
+                pushIndex(i, j);
+            }
         }
     }
-    // points below previously used for testing
-    /*var positions = [
-        0, 0, 0.5,
-        0, 0.5, 0.5,
-        0.5, 0, 0.5 ,
-        0, -0.5, 0,
-        -0.5, -0.5, 0,
-        -0.5, 0, 0,
-        0, 0, 0,
-        0, 0.3, 0.3,
-        0.3, 0, 0.3,
-        0, 0, 0,
-        0, -0.3, 0.3,
-        0.3, 0, 0.3,
-        0, 0, 0,
-        0, 0.3, 0.3,
-        -0.3, 0, 0.3,
-        0, 0, 0,
-        0, -0.3, 0.3,
-        -0.3, 0, 0.3,
-        0.5, 0, 0,
-        -0.5, 0, 0,
-        0, 0, 0.5
-    ];
-    var colors = [
-        0.1, 0.5, 0.7, 1,
-        0.05, 0.25, 0.35, 1,
-        1, 1, 1, 1,
-        1, 0, 0, 1,
-        0, 1, 0, 1,
-        0, 0, 1, 1,
-        0, 0.5, 0.5, 1,
-        0, 0.5, 0.5, 1,
-        0, 0.5, 0.5, 1,
-        0.5, 0, 0.5, 1,
-        0.5, 0, 0.5, 1,
-        0.5, 0, 0.5, 1,
-        0.5, 0.5, 0, 1,
-        0.5, 0.5, 0, 1,
-        0.5, 0.5, 0, 1,
-        1, 0, 0, 1,
-        1, 0, 0, 1,
-        1, 0, 0, 1,
-        0, 0, 1, 1,
-        0, 0, 1, 1,
-        0, 0, 1, 1
-    ];*/
+
     var matrix = [
         1, 0, 0, 0,
         0, 1, 0, 0,
@@ -179,7 +122,8 @@ function main() {
     var buffers = {
         position: gl.createBuffer(),
         color: gl.createBuffer(),
-        normal: gl.createBuffer()
+        normal: gl.createBuffer(),
+        index: gl.createBuffer()
     };
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
@@ -187,6 +131,8 @@ function main() {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.index);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -248,10 +194,12 @@ function drawGraph(gl, programInfo, buffers, matrix) {
     var offset = 0;
     gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, size, type, normalize, stride, offset);
 
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.index);
+
     gl.uniformMatrix4fv(programInfo.uniformLocations.matrix, false, matrix);
 
-    var count = Math.pow(polyCount, 2) * 6;
-    gl.drawArrays(gl.TRIANGLES, offset, count);
+    var count = polyCount*polyCount*6;
+    gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, offset);
 }
 
 function loadShader(gl, type, source) {
