@@ -16,8 +16,12 @@ main();
 function main() {
     const gl = canvas.getContext('webgl');
     if(!gl) {
-        alert('WebGL unsupported!');
+        alert('WebGL not supported.');
         return;
+    }
+    const ext = gl.getExtension('OES_element_index_uint');
+    if(!ext) {
+        alert('32-bit indices not supported.');
     }
 
     canvas.width = canvasSize.width;
@@ -71,6 +75,17 @@ function main() {
             matrix: gl.getUniformLocation(program, 'u_matrix')
         }
     };
+
+    var positions = [];
+    var colors = [];
+    var normals = [];
+    var indices = [];
+    var matrix = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ]
     
     function f(x, y) {
         return 0.3*Math.sin(11*x)*Math.sin(8*y);
@@ -97,11 +112,7 @@ function main() {
             index + 1
         );
     }
-    var positions = [];
-    var colors = [];
-    var normals = [];
-    var indices = [];
-
+    
     const delta = 2 / polyCount;
     for(i = 0; i <= polyCount; i++) {
         for(j = 0; j <= polyCount; j++) {
@@ -111,13 +122,6 @@ function main() {
             }
         }
     }
-
-    var matrix = [
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-    ]
 
     var buffers = {
         position: gl.createBuffer(),
@@ -132,20 +136,18 @@ function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.index);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
         
     function renderLoop() {
-        // trig values to be used in the rotation matrix
         sinTheta = Math.sin(camera.theta);
         cosTheta = Math.cos(camera.theta);
         sinPhi = Math.sin(camera.phi);
         cosPhi = Math.cos(camera.phi);
 
-        // 3-dimensional rotation matrix
         matrix = [
             cosTheta, sinTheta*sinPhi, sinTheta*cosPhi, sinTheta*cosPhi/2,
             -sinTheta, cosTheta*sinPhi, cosTheta*cosPhi, cosTheta*cosPhi/2,
@@ -154,10 +156,8 @@ function main() {
         ];
 
         drawGraph(gl, programInfo, buffers, matrix);
-        // repeatedly renders the scene
         requestAnimationFrame(renderLoop);
     }
-    // render for the first time
     requestAnimationFrame(renderLoop);
 }
 
@@ -199,7 +199,7 @@ function drawGraph(gl, programInfo, buffers, matrix) {
     gl.uniformMatrix4fv(programInfo.uniformLocations.matrix, false, matrix);
 
     var count = polyCount*polyCount*6;
-    gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, offset);
+    gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_INT, offset);
 }
 
 function loadShader(gl, type, source) {
