@@ -1,5 +1,5 @@
 body {
-    background-color: rgb(29, 32, 59);
+    background-color: #3a3a3a;
     overflow: hidden;
     font: 16px 'Trebuchet MS';
     color: whitesmoke;
@@ -8,7 +8,7 @@ a {
     text-decoration: none;
 }
 .button {
-    background-color: rgb(48, 53, 97);
+    background-color: #4f4f4f;
     color: whitesmoke;
     display: flex;
     margin: auto;
@@ -17,9 +17,5 @@ a {
     padding: 20px 20px 20px 20px;
 }
 .button:hover {
-    background-color: rgb(57, 63, 117);
-}
-.button:active {
-    background-color: rgb(38, 43, 87);
-    color: gray;
+    background-color: #525252;
 }

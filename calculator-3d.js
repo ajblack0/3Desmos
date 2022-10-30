@@ -1,5 +1,5 @@
-const canvas = document.getElementById('viewport');
-const canvasSize = canvas.getBoundingClientRect();
+const canvas = document.getElementById('graph-viewport');
+var canvasSize = canvas.getBoundingClientRect();
 var camera = {
     theta: 0,
     phi: Math.PI/4
@@ -26,11 +26,19 @@ function main() {
 
     canvas.width = canvasSize.width;
     canvas.height = canvasSize.height;
+    var aspectRatio = canvasSize.width / canvasSize.height;
 
     document.onpointermove = handleMouse;
     document.onpointerdown = function(event) {mouseDown = (event.target == canvas);};
     document.onpointerup = function() {mouseDown = false; prevMouse.x = null;};
     document.onkeydown = handleKeys;
+    window.onresize = function() {
+        canvasSize = canvas.getBoundingClientRect();
+        canvas.width = canvasSize.width;
+        canvas.height = canvasSize.height;
+        aspectRatio = canvas.width / canvas.height;
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    };
 
 
     const vertexShaderSource = `
@@ -53,10 +61,10 @@ function main() {
     varying vec4 v_color;
     varying vec3 v_normal;
 
-    vec3 light = normalize(vec3(0.3, 0.6, -1.0));
+    vec3 light = normalize(vec3(0.2, 0.3, -1.0));
 
     void main() {
-        gl_FragColor = vec4(v_color.rgb * (0.4+0.6*dot((2.0*float(gl_FrontFacing)-1.0)*v_normal, light)), v_color.a);
+        gl_FragColor = vec4(v_color.rgb * (0.6+0.4*dot((2.0*float(gl_FrontFacing)-1.0)*v_normal, light)), v_color.a);
     }
     `;
 
@@ -149,10 +157,10 @@ function main() {
         cosPhi = Math.cos(camera.phi);
 
         matrix = [
-            cosTheta, sinTheta*sinPhi, sinTheta*cosPhi, sinTheta*cosPhi/2,
-            -sinTheta, cosTheta*sinPhi, cosTheta*cosPhi, cosTheta*cosPhi/2,
-            0, cosPhi, -sinPhi, -sinPhi/2,
-            0, 0, 0, 2
+            cosTheta / aspectRatio, sinTheta*sinPhi, sinTheta*cosPhi, sinTheta*cosPhi*0.4,
+            -sinTheta / aspectRatio, cosTheta*sinPhi, cosTheta*cosPhi, cosTheta*cosPhi*0.4,
+            0, cosPhi, -sinPhi, -sinPhi*0.4,
+            0, 0, 0, 1.415
         ];
 
         drawGraph(gl, programInfo, buffers, matrix);
