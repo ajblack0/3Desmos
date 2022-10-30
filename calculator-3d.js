@@ -4,6 +4,16 @@ var camera = {
     theta: 0,
     phi: Math.PI/4
 };
+var zoom = {
+    x: 1,
+    y: 1,
+    z: 1,
+    set: function(scalar) {
+        zoom.x *= scalar;
+        zoom.y *= scalar;
+        zoom.z *= scalar;
+    }
+}
 var prevMouse = {
     x: null,
     y: null
@@ -39,6 +49,8 @@ function main() {
         aspectRatio = canvas.width / canvas.height;
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     };
+    canvas.onwheel = initGraph;
+    
 
 
     const vertexShaderSource = `
@@ -99,15 +111,21 @@ function main() {
         return 0.3*Math.sin(11*x)*Math.sin(8*y);
     }
     function dfdx(x, y) {
+        if(isNaN(f(x + 0.0000001, y))) {
+            return (f(x, y) - f(x - 0.0000001, y)) / 0.0000001;
+        }
         return (f(x + 0.0000001, y) - f(x, y)) / 0.0000001;
     }
     function dfdy(x, y) {
+        if(isNaN(f(x, y + 0.0000001))) {
+            return (f(x, y) - f(x, y - 0.0000001)) / 0.0000001;
+        }
         return (f(x, y + 0.0000001) - f(x, y)) / 0.0000001;
     }
     function pushVertex(x, y) {
-        positions.push(x, y, f(x, y));
+        positions.push(x / zoom.x, y / zoom.y, f(x, y) / zoom.z);
         colors.push(0, 0.7, 1, 1);
-        normals.push(-dfdx(x, y), -dfdy(x, y), 1);
+        normals.push(-dfdx(x, y), -dfdy(x, y), zoom.z);
     }
     function pushIndex(i, j) {
         var index = i*(polyCount+1) + j;
@@ -121,30 +139,42 @@ function main() {
         );
     }
     
-    const delta = 2 / polyCount;
-    for(i = 0; i <= polyCount; i++) {
-        for(j = 0; j <= polyCount; j++) {
-            pushVertex(i*delta - 1, j*delta - 1);
-            if(j < polyCount) {
-                pushIndex(i, j);
+    var buffers;
+    function initGraph(event) {
+        positions = [];
+        colors = [];
+        normals = [];
+        indices = [];
+        if(event) {
+            zoom.set(1 + event.deltaY / 2000);
+        }
+
+        var deltax = 2*zoom.x / polyCount;
+        var deltay = 2*zoom.y / polyCount;
+        for(i = 0; i <= polyCount; i++) {
+            for(j = 0; j <= polyCount; j++) {
+                pushVertex(i*deltax - zoom.x, j*deltay - zoom.y);
+                if(j < polyCount) {
+                    pushIndex(i, j);
+                }
             }
         }
+        buffers = {
+            position: gl.createBuffer(),
+            color: gl.createBuffer(),
+            normal: gl.createBuffer(),
+            index: gl.createBuffer()
+        };
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.index);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
     }
-
-    var buffers = {
-        position: gl.createBuffer(),
-        color: gl.createBuffer(),
-        normal: gl.createBuffer(),
-        index: gl.createBuffer()
-    };
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.index);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
+    initGraph();
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 

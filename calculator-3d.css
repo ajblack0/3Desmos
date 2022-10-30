@@ -26,7 +26,6 @@ body {
 #content {
     padding-top: 40px;
     height: calc(100% - 40px);
-    overflow: hidden;
     display: flex;
 }
 #input-sidebar {
