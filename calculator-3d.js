@@ -125,7 +125,7 @@ function main() {
     function pushVertex(x, y) {
         positions.push(x / zoom.x, y / zoom.y, f(x, y) / zoom.z);
         colors.push(0, 0.7, 1, 1);
-        normals.push(-dfdx(x, y), -dfdy(x, y), zoom.z);
+        normals.push(-zoom.x*dfdx(x, y), -zoom.y*dfdy(x, y), zoom.z);
     }
     function pushIndex(i, j) {
         var index = i*(polyCount+1) + j;
