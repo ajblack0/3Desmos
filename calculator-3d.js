@@ -62,8 +62,14 @@ function main() {
     varying vec4 v_color;
     varying vec3 v_normal;
 
+    mat4 perspective = mat4(vec4(1.0, 0.0, 0.0, 0.0),
+                            vec4(0.0, 1.0, 0.0, 0.0),
+                            vec4(0.0, 0.0, 0.4, 0.4),
+                            vec4(0.0, 0.0, 0.0, 1.5));
+    
+
     void main() {
-        gl_Position = u_matrix * a_position;
+        gl_Position = perspective * u_matrix * a_position;
         v_color = a_color;
         v_normal = mat3(u_matrix) * normalize(a_normal);
     }
@@ -187,10 +193,10 @@ function main() {
         cosPhi = Math.cos(camera.phi);
 
         matrix = [
-            cosTheta / aspectRatio, sinTheta*sinPhi, sinTheta*cosPhi, sinTheta*cosPhi*0.4,
-            -sinTheta / aspectRatio, cosTheta*sinPhi, cosTheta*cosPhi, cosTheta*cosPhi*0.4,
-            0, cosPhi, -sinPhi, -sinPhi*0.4,
-            0, 0, 0, 1.415
+            cosTheta / aspectRatio, sinTheta*sinPhi, sinTheta*cosPhi, 0,
+            -sinTheta / aspectRatio, cosTheta*sinPhi, cosTheta*cosPhi, 0,
+            0, cosPhi, -sinPhi, 0,
+            0, 0, 0, 1
         ];
 
         drawGraph(gl, programInfo, buffers, matrix);
